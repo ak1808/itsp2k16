@@ -25,7 +25,6 @@ INPUT = IO.IN
 LOW = IO.LOW
 HIGH = IO.HIGH
 count1 = 0
-global led10 = [0,0,0,0,0,0]
 class TM1637:
 	__doublePoint = False
 	__Clkpin = 0
@@ -225,7 +224,7 @@ led5= 18
 led6= 8
 led7= 7
 led8= 25
-
+led10 = [0,0,0,0,0,0]
 demux1= 5
 demux2= 6
 demux3= 13
@@ -266,13 +265,13 @@ GPIO.output(demux4, False)
 
 ################ led on/off ########################################
 def ledonoff():
-	binary = [[0,0,0,0],[0,0,0,1],[0,0,1,0],[0,0,1,1],[0,1,0,0],[0,1,0,1]
-	for i in range(0,6):
-		if (led10[i] == 1):
-			GPIO.output(demux1, binary[i][0])
-			GPIO.output(demux2, binary[i][1])
-			GPIO.output(demux3, binary[i][2])
-			GPIO.output(demux4, binary[i][3])
+	binary = [[0,0,0,0],[0,0,0,1],[0,0,1,0],[0,0,1,1],[0,1,0,0],[0,1,0,1]]
+	for k in [0,1,2,3,4,5]:
+		if (led10[k] == 1):
+			GPIO.output(demux1, binary[k][0])
+			GPIO.output(demux2, binary[k][1])
+			GPIO.output(demux3, binary[k][2])
+			GPIO.output(demux4, binary[k][3])
 			time.sleep(100)
 
 
@@ -484,12 +483,13 @@ def reset():
 @app.route('/led/<control>')
 def led(control):
 	global led10
-	for i in range(0,6):
+        control = int(control)
+	for i in range(0,5):
 		led10[i] = control%10
 		control = control/10
 	thread2= ourThread(2,"t2")
-    thread2.start()
-    return render_template('index.html')
+        thread2.start()
+        return render_template('index.html')
 
 @app.route('/1/gameover/')
 def gameover1():
@@ -508,7 +508,7 @@ def gameover1():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0)
+    app.run(debug=True, host='0.0.0.0')
 
 #*************************************** END OF PROGRAM ********************************************#    	
 
