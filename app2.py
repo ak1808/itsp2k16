@@ -8,6 +8,7 @@ import time
 import RPi.GPIO as IO
 import threading
 
+######################TM1637 Library##########################################################
 IO.setwarnings(False)
 IO.setmode(IO.BCM)
 
@@ -24,6 +25,7 @@ INPUT = IO.IN
 LOW = IO.LOW
 HIGH = IO.HIGH
 count1 = 0
+global led10 = [0,0,0,0,0,0]
 class TM1637:
 	__doublePoint = False
 	__Clkpin = 0
@@ -157,9 +159,8 @@ class TM1637:
 		else:
 			data = HexDigits[data] + pointData;
 		return data
-	# end coding
-	
-# end class TM1637
+
+############## multithreading #########################3	
 class myThread (threading.Thread):
     def __init__(self, threadID, name, tim):
         threading.Thread.__init__(self)
@@ -170,16 +171,18 @@ class myThread (threading.Thread):
         self.tim = tim
     def run(self):
         timer(self.tim)
-        
-                        
-                     
-    
-            
-		
 
-## =============================================================
-# -----------  Test -------------
-i = 0
+class ourThread (threading.Thread):
+    def __init__(self, threadID, name):
+        threading.Thread.__init__(self)
+        self.paused= False
+        self.pause_cond =threading.Condition(threading.Lock())
+        self.threadID = threadID
+        self.name = name
+    def run(self):
+        ledonoff()
+
+######################### timer ########################################
 anzeige = [0,0,0,0]
 
 def timer(var):
@@ -212,13 +215,8 @@ def timer(var):
                     else:
                         Display.Clear()
                         break;
-        
-    #Display.ShowDoublepoint(True)
-    #Display.SetBrightnes(4)
 
-
-
-
+###################### ini ###############################
 led1= 4
 led2= 17
 led3= 27
@@ -227,6 +225,11 @@ led5= 18
 led6= 8
 led7= 7
 led8= 25
+
+demux1= 5
+demux2= 6
+demux3= 13
+demux4= 19
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
@@ -239,6 +242,10 @@ GPIO.setup(led5, GPIO.OUT)
 GPIO.setup(led6, GPIO.OUT)
 GPIO.setup(led7, GPIO.OUT)
 GPIO.setup(led8, GPIO.OUT)
+GPIO.setup(demux1, GPIO.OUT)
+GPIO.setup(demux2, GPIO.OUT)
+GPIO.setup(demux3, GPIO.OUT)
+GPIO.setup(demux4, GPIO.OUT)
 
 
 GPIO.output(led1, True)
@@ -251,6 +258,27 @@ GPIO.output(led6, True)
 GPIO.output(led7, True)
 GPIO.output(led8, True)
 
+GPIO.output(demux1, False)
+GPIO.output(demux2, False)
+GPIO.output(demux3, False)
+GPIO.output(demux4, False)
+
+
+################ led on/off ########################################
+def ledonoff():
+	binary = [[0,0,0,0],[0,0,0,1],[0,0,1,0],[0,0,1,1],[0,1,0,0],[0,1,0,1]
+	for i in range(0,6):
+		if (led10[i] == 1):
+			GPIO.output(demux1, binary[i][0])
+			GPIO.output(demux2, binary[i][1])
+			GPIO.output(demux3, binary[i][2])
+			GPIO.output(demux4, binary[i][3])
+			time.sleep(100)
+
+
+
+
+############### SSDs #############################################
 
 def ssd1(i):
                 if i == 1:
@@ -391,12 +419,7 @@ def ssd2(j):
                         GPIO.output(led7, False)
                         GPIO.output(led8, False)
 
-
-
-
-
-
-# The GPIO pins for the Energenie modu
+############################ Flask ###################################
 
 app = Flask(__name__)
 
@@ -458,6 +481,16 @@ def reset():
     
     return render_template('index.html')
 
+@app.route('/led/<control>')
+def led(control):
+	global led10
+	for i in range(0,6):
+		led10[i] = control%10
+		control = control/10
+	thread2= ourThread(2,"t2")
+    thread2.start()
+    return render_template('index.html')
+
 @app.route('/1/gameover/')
 def gameover1():
     ssd1(0)
@@ -475,7 +508,9 @@ def gameover1():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True, host='0.0.0)
+
+#*************************************** END OF PROGRAM ********************************************#    	
 
 
 
